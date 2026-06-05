@@ -41,16 +41,16 @@ local Screen = Instance.new("ScreenGui", CoreGui)
 Screen.Name = "TwistedV6"
 Screen.IgnoreGuiInset = true 
 
--- EDITED: Re-engineered UI FOV Ring Framework with a verified asset ID
+-- EDITED: Swapped out the checkmark ID from IMG_2163.jpg for an actual hollow circle asset
 local FOVCircle = Instance.new("ImageLabel", Screen)
 FOVCircle.Name = "FOVCircle"
 FOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FOVCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
 FOVCircle.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
 FOVCircle.BackgroundTransparency = 1
-FOVCircle.Image = "rbxassetid://6031068421" 
+FOVCircle.Image = "rbxassetid://12322420427" 
 FOVCircle.ImageColor3 = Color3.fromRGB(140, 80, 255)
-FOVCircle.ImageTransparency = 0.3
+FOVCircle.ImageTransparency = 0.4
 FOVCircle.Visible = Config.ShowFOVCircle
 
 -- Main Menu Panel
@@ -255,7 +255,7 @@ RunService.RenderStepped:Connect(function()
             -- Snap camera instantaneously
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
             
-            -- EDITED: Force character model orientation to automatically look towards target position
+            -- Force character model orientation to automatically look towards target position
             if character and character:FindFirstChild("HumanoidRootPart") then
                 local lookPos = Vector3.new(target.Position.X, character.HumanoidRootPart.Position.Y, target.Position.Z)
                 character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position, lookPos)
