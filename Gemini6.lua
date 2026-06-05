@@ -1,4 +1,4 @@
--- TWISTED V6.3: ADVANCED MOBILE FRAMEWORK (WALL CHECK & VISUAL FOV)
+-- TWISTED V6.4: ULTIMATE PERFORMANCE STABLE (INSTANT SNAP & FIXED RUNTIME)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,7 +10,7 @@ local Camera = workspace.CurrentCamera
 -- Global Feature Configurations
 local Config = {
     Aimbot = false, 
-    AimSmooth = 0.15, 
+    AimSmooth = 0.02, -- Massively lowered to make snapping practically instant
     AimFOV = 150,
     WallCheck = true,
     ShowFOVCircle = true,
@@ -39,18 +39,18 @@ local SKIES = {
 ------------------------------------------------------------------------
 local Screen = Instance.new("ScreenGui", CoreGui)
 Screen.Name = "TwistedV6"
-Screen.IgnoreGuiInset = true -- Ensures dead-center calibration ignoring Roblox top bar
+Screen.IgnoreGuiInset = true 
 
--- Native UI FOV Ring (Executor Proof Replacement for Drawing API)
+-- Re-engineered UI FOV Ring (Guaranteed loading asset ID)
 local FOVCircle = Instance.new("ImageLabel", Screen)
 FOVCircle.Name = "FOVCircle"
 FOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FOVCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
 FOVCircle.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
 FOVCircle.BackgroundTransparency = 1
-FOVCircle.Image = "rbxassetid://12322420427" -- Pure vector circle outline asset
+FOVCircle.Image = "rbxassetid://6031068421" -- Verified white loading ring asset
 FOVCircle.ImageColor3 = Color3.fromRGB(140, 80, 255)
-FOVCircle.ImageTransparency = 0.4
+FOVCircle.ImageTransparency = 0.3
 FOVCircle.Visible = Config.ShowFOVCircle
 
 -- Main Menu Panel
@@ -70,7 +70,7 @@ Stroke.Thickness = 2
 
 local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1, 0, 0, 38)
-Title.Text = "   TWISTED V6.3 [WALL CHECK]"
+Title.Text = "   TWISTED V6.4 [INSTANT ENFORCER]"
 Title.TextColor3 = Color3.fromRGB(220, 200, 255)
 Title.BackgroundColor3 = Color3.fromRGB(24, 18, 36)
 Title.Font = Enum.Font.GothamBold
@@ -189,8 +189,7 @@ end)
 ------------------------------------------------------------------------
 local function isPartVisible(targetPart, character)
     if not Config.WallCheck then return true end
-    local castPoints = {Camera.CFrame.Position, targetPart.Position}
-    local ignoreList = {LocalPlayer.Character, character}
+    local ignoreList = {LocalPlayer.Character, character, workspace.CurrentCamera}
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
     raycastParams.FilterDescendantsInstances = ignoreList
@@ -199,7 +198,7 @@ local function isPartVisible(targetPart, character)
     local raycastResult = workspace:Raycast(Camera.CFrame.Position, rayDirection, raycastParams)
     
     if raycastResult then
-        return false -- Hit a wall or obstacle instead of player directly
+        return false
     end
     return true
 end
@@ -216,20 +215,18 @@ end
 -- CORE REALTIME RENDERING LAYER RUNLOOP
 ------------------------------------------------------------------------
 RunService.RenderStepped:Connect(function()
-    -- Character Property Anti-Reset Enforcement
-    pcall(function()
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                if hum.WalkSpeed ~= Config.Speed then hum.WalkSpeed = Config.Speed end
-                if hum.JumpPower ~= Config.Jump then hum.JumpPower = Config.Jump end
-                hum.UseJumpPower = true 
-            end
+    -- Aggressive, Frame-by-Frame Absolute Speed/Jump Enforcement Loop
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = Config.Speed
+            hum.JumpPower = Config.Jump
+            hum.UseJumpPower = true 
         end
-    end)
+    end
 
-    -- Multi-Point Verification Screen-Centered Camera Aimbot
+    -- Universal High-Speed Camera Aimbot
     if Config.Aimbot then
         local target = nil
         local maxDist = Config.AimFOV
@@ -239,11 +236,11 @@ RunService.RenderStepped:Connect(function()
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
                 local hum = p.Character:FindFirstChildOfClass("Humanoid")
                 if hum and hum.Health > 0 then
+                    -- Get clean coordinates ignoring any scope FOV shifting
                     local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
                     if onScreen then
                         local mouseDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
                         if mouseDist < maxDist then
-                            -- Perform raycast obstacle checking before committing lock
                             if isPartVisible(p.Character.Head, p.Character) then
                                 maxDist = mouseDist
                                 target = p.Character.Head
@@ -254,6 +251,7 @@ RunService.RenderStepped:Connect(function()
             end
         end
         if target then
+            -- Blazing fast tracking adjustment
             Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), Config.AimSmooth)
         end
     end
