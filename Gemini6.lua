@@ -10,7 +10,7 @@ local Camera = workspace.CurrentCamera
 -- Global Feature Configurations
 local Config = {
     Aimbot = false, 
-    AimSmooth = 0, -- EDITED: Force smooth factor to 0 for instantaneous snapping
+    AimSmooth = 0, 
     AimFOV = 150,
     WallCheck = true,
     ShowFOVCircle = true,
@@ -41,16 +41,16 @@ local Screen = Instance.new("ScreenGui", CoreGui)
 Screen.Name = "TwistedV6"
 Screen.IgnoreGuiInset = true 
 
--- Native UI FOV Ring Framework
+-- EDITED: Re-engineered UI FOV Ring Framework with a verified asset ID
 local FOVCircle = Instance.new("ImageLabel", Screen)
 FOVCircle.Name = "FOVCircle"
 FOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FOVCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
 FOVCircle.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
 FOVCircle.BackgroundTransparency = 1
-FOVCircle.Image = "rbxassetid://12322420427" 
+FOVCircle.Image = "rbxassetid://6031068421" 
 FOVCircle.ImageColor3 = Color3.fromRGB(140, 80, 255)
-FOVCircle.ImageTransparency = 0.4
+FOVCircle.ImageTransparency = 0.3
 FOVCircle.Visible = Config.ShowFOVCircle
 
 -- Main Menu Panel
@@ -216,10 +216,10 @@ end
 ------------------------------------------------------------------------
 RunService.RenderStepped:Connect(function()
     -- Character Property Anti-Reset Enforcement
+    local character = LocalPlayer.Character
     pcall(function()
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
+        if character then
+            local hum = character:FindFirstChildOfClass("Humanoid")
             if hum then
                 if hum.WalkSpeed ~= Config.Speed then hum.WalkSpeed = Config.Speed end
                 if hum.JumpPower ~= Config.Jump then hum.JumpPower = Config.Jump end
@@ -252,8 +252,14 @@ RunService.RenderStepped:Connect(function()
             end
         end
         if target then
-            -- EDITED: Swapped out Lerp interpolation to force a hard, instant frame-snap alignment
+            -- Snap camera instantaneously
             Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            
+            -- EDITED: Force character model orientation to automatically look towards target position
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local lookPos = Vector3.new(target.Position.X, character.HumanoidRootPart.Position.Y, target.Position.Z)
+                character.HumanoidRootPart.CFrame = CFrame.new(character.HumanoidRootPart.Position, lookPos)
+            end
         end
     end
 
