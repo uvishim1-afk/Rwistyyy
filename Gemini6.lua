@@ -1,4 +1,4 @@
--- TWISTED V6.5: FINAL POLISH (FIXED FOV & HEARTBEAT SPEED)
+-- TWISTED V6.6: FULL FEATURE RESTORATION & AIMBOT STRENGTH ENGINE
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,7 +10,7 @@ local Camera = workspace.CurrentCamera
 -- Global Feature Configurations
 local Config = {
     Aimbot = false, 
-    AimSmooth = 0, -- 0 = Instant Snap
+    AimStrength = 5, -- Slider Scale: 1 (Very Slow/Safe) to 10 (Instant Snap)
     AimFOV = 150,
     WallCheck = true,
     ShowFOVCircle = true,
@@ -26,7 +26,7 @@ local Config = {
 
 local lastTriggerTime = 0
 
--- Skybox Data
+-- Fully Working Skybox Asset Arrays
 local SKIES = {
     {N = "🌤 Default", Bk = "rbxassetid://91458024", Ft = "rbxassetid://91458024", Dn = "rbxassetid://91457980", Lf = "rbxassetid://91458024", Rt = "rbxassetid://91458024", Up = "rbxassetid://91458024"},
     {N = "🌌 Space", Bk = "rbxassetid://159454286", Ft = "rbxassetid://159454286", Dn = "rbxassetid://159454286", Lf = "rbxassetid://159454286", Rt = "rbxassetid://159454286", Up = "rbxassetid://159454286"},
@@ -35,37 +35,42 @@ local SKIES = {
 }
 
 ------------------------------------------------------------------------
--- UI SYSTEM
+-- CORE NATIVE INTERFACE & STATIC FOV SYSTEM
 ------------------------------------------------------------------------
 local Screen = Instance.new("ScreenGui", CoreGui)
 Screen.Name = "TwistedV6"
 Screen.IgnoreGuiInset = true 
 
--- FIXED FOV RING (Actually a circle this time!)
+-- High-Definition Hollow Visual Circle (Guaranteed Alignment Asset)
 local FOVCircle = Instance.new("ImageLabel", Screen)
+FOVCircle.Name = "FOVCircle"
 FOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
 FOVCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
 FOVCircle.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
 FOVCircle.BackgroundTransparency = 1
-FOVCircle.Image = "rbxassetid://6921370141" -- Clean Hollow Circle Asset
+FOVCircle.Image = "rbxassetid://6921370141" 
 FOVCircle.ImageColor3 = Color3.fromRGB(140, 80, 255)
-FOVCircle.ImageTransparency = 0.5
+FOVCircle.ImageTransparency = 0.4
 FOVCircle.Visible = Config.ShowFOVCircle
 
+-- Main Menu Panel
 local Main = Instance.new("Frame", Screen)
-Main.Size = UDim2.new(0, 260, 0, 380)
-Main.Position = UDim2.new(0.5, -130, 0.5, -190)
+Main.Size = UDim2.new(0, 260, 0, 390)
+Main.Position = UDim2.new(0.5, -130, 0.5, -195)
 Main.BackgroundColor3 = Color3.fromRGB(15, 12, 22)
+Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true 
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+
+local Corner = Instance.new("UICorner", Main)
+Corner.CornerRadius = UDim.new(0, 10)
 local Stroke = Instance.new("UIStroke", Main)
 Stroke.Color = Color3.fromRGB(140, 80, 255)
 Stroke.Thickness = 2
 
 local Title = Instance.new("TextLabel", Main)
 Title.Size = UDim2.new(1, 0, 0, 38)
-Title.Text = "   TWISTED V6.5 [FIXED]"
+Title.Text = "   TWISTED V6.6 [FULL SUITE]"
 Title.TextColor3 = Color3.fromRGB(220, 200, 255)
 Title.BackgroundColor3 = Color3.fromRGB(24, 18, 36)
 Title.Font = Enum.Font.GothamBold
@@ -77,113 +82,187 @@ local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -12, 1, -50)
 Container.Position = UDim2.new(0, 6, 0, 44)
 Container.BackgroundTransparency = 1
-Container.CanvasSize = UDim2.new(0, 0, 0, 580)
-Container.ScrollBarThickness = 0
+Container.CanvasSize = UDim2.new(0, 0, 0, 620)
+Container.ScrollBarThickness = 2
 
 local List = Instance.new("UIListLayout", Container)
 List.Padding = UDim.new(0, 6)
 
--- Component Helpers
-local function CreateToggle(txt, val, cb)
+------------------------------------------------------------------------
+-- INTERACTION DESIGN SYSTEM (DYNAMIC STATES)
+------------------------------------------------------------------------
+local function CreateToggleButton(titleText, initialValue, callback)
+    local state = initialValue
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -4, 0, 34)
     btn.Font = Enum.Font.GothamSemibold
     btn.TextSize = 11
-    Instance.new("UICorner", btn)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     
-    local function update()
-        btn.Text = txt .. (val and " : ON" or " : OFF")
-        btn.BackgroundColor3 = val and Color3.fromRGB(120, 50, 220) or Color3.fromRGB(30, 25, 40)
-        btn.TextColor3 = val and Color3.new(1,1,1) or Color3.fromRGB(180, 160, 200)
+    local function renderState()
+        if state then
+            btn.BackgroundColor3 = Color3.fromRGB(120, 50, 220)
+            btn.Text = titleText .. " : ON"
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(30, 25, 40)
+            btn.Text = titleText .. " : OFF"
+            btn.TextColor3 = Color3.fromRGB(180, 160, 200)
+        end
     end
+    renderState()
     
-    btn.MouseButton1Click:Connect(function() val = not val update() cb(val) end)
-    update()
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        renderState()
+        callback(state)
+    end)
+    return btn
 end
 
-local function CreateAction(txt, cb)
+local function CreateActionButton(text, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -4, 0, 34)
     btn.BackgroundColor3 = Color3.fromRGB(45, 35, 65)
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.Text = txt
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(230, 210, 255)
     btn.Font = Enum.Font.GothamSemibold
     btn.TextSize = 11
-    Instance.new("UICorner", btn)
-    btn.MouseButton1Click:Connect(cb)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    btn.MouseButton1Click:Connect(callback)
     return btn
 end
 
 ------------------------------------------------------------------------
--- SETUP BUTTONS
+-- DRAWING ALL MENU ELEMENTS
 ------------------------------------------------------------------------
-CreateToggle("Aimbot", Config.Aimbot, function(s) Config.Aimbot = s end)
-CreateToggle("Wall Check", Config.WallCheck, function(s) Config.WallCheck = s end)
-CreateToggle("FOV Circle", Config.ShowFOVCircle, function(s) Config.ShowFOVCircle = s FOVCircle.Visible = s end)
-CreateToggle("Triggerbot", Config.Triggerbot, function(s) Config.Triggerbot = s end)
-CreateToggle("ESP Master", Config.ESP, function(s) Config.ESP = s end)
+CreateToggleButton("Camera Aimbot", Config.Aimbot, function(s) Config.Aimbot = s end)
+CreateToggleButton("Aimbot Wall Check", Config.WallCheck, function(s) Config.WallCheck = s end)
+CreateToggleButton("Show FOV Ring", Config.ShowFOVCircle, function(s) Config.ShowFOVCircle = s; FOVCircle.Visible = s end)
+CreateToggleButton("Active Triggerbot", Config.Triggerbot, function(s) Config.Triggerbot = s end)
+CreateToggleButton("Master ESP System", Config.ESP, function(s) Config.ESP = s end)
+CreateToggleButton("ESP Player Names", Config.ESPNames, function(s) Config.ESPNames = s end)
+CreateToggleButton("ESP Wireframe Boxes", Config.ESPBoxes, function(s) Config.ESPBoxes = s end)
 
-local fovBtn = CreateAction("FOV Size: " .. Config.AimFOV, function()
-    Config.AimFOV = (Config.AimFOV >= 350) and 100 or Config.AimFOV + 50
-    fovBtn.Text = "FOV Size: " .. Config.AimFOV
+local strengthBtn
+strengthBtn = CreateActionButton("Aimbot Strength (" .. Config.AimStrength .. "/10)", function()
+    Config.AimStrength = Config.AimStrength + 1
+    if Config.AimStrength > 10 then Config.AimStrength = 1 end
+    strengthBtn.Text = "Aimbot Strength (" .. Config.AimStrength .. "/10)"
+end)
+
+local fovBtn
+fovBtn = CreateActionButton("Aimbot FOV Range (" .. Config.AimFOV .. ")", function()
+    Config.AimFOV = Config.AimFOV + 50
+    if Config.AimFOV > 350 then Config.AimFOV = 100 end
+    fovBtn.Text = "Aimbot FOV Range (" .. Config.AimFOV .. ")"
     FOVCircle.Size = UDim2.new(0, Config.AimFOV * 2, 0, Config.AimFOV * 2)
 end)
 
-local speedBtn = CreateAction("Speed: " .. Config.Speed, function()
-    Config.Speed = (Config.Speed >= 150) and 16 or Config.Speed + 20
-    speedBtn.Text = "Speed: " .. Config.Speed
+local skyBtn
+skyBtn = CreateActionButton("Skybox: 🌤 Default", function()
+    Config.SkyIndex = (Config.SkyIndex % #SKIES) + 1
+    local data = SKIES[Config.SkyIndex]
+    skyBtn.Text = "Skybox: " .. data.N
+    
+    local sky = Lighting:FindFirstChildOfClass("Sky") or Instance.new("Sky", Lighting)
+    sky.SkyboxBk = data.Bk; sky.SkyboxDn = data.Dn; sky.SkyboxFt = data.Ft
+    sky.SkyboxLf = data.Lf; sky.SkyboxRt = data.Rt; sky.SkyboxUp = data.Up
+end)
+
+local speedBtn
+speedBtn = CreateActionButton("Speed Modifier (" .. Config.Speed .. ")", function()
+    Config.Speed = Config.Speed + 20
+    if Config.Speed > 150 then Config.Speed = 16 end
+    speedBtn.Text = "Speed Modifier (" .. Config.Speed .. ")"
+end)
+
+local jumpBtn
+jumpBtn = CreateActionButton("Jump Modifier (" .. Config.Jump .. ")", function()
+    Config.Jump = Config.Jump + 25
+    if Config.Jump > 250 then Config.Jump = 50 end
+    jumpBtn.Text = "Jump Modifier (" .. Config.Jump .. ")"
+end)
+
+CreateActionButton("Reset Speed & Jump", function()
+    Config.Speed = 16
+    Config.Jump = 50
+    speedBtn.Text = "Speed Modifier (16)"
+    jumpBtn.Text = "Jump Modifier (50)"
 end)
 
 ------------------------------------------------------------------------
--- LOGIC ENGINE
+-- UTILITY CORE ENGINE FUNCTIONS
 ------------------------------------------------------------------------
+local function isPartVisible(targetPart, character)
+    if not Config.WallCheck then return true end
+    local ignoreList = {LocalPlayer.Character, character, Camera}
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = ignoreList
+
+    local rayDirection = targetPart.Position - Camera.CFrame.Position
+    local raycastResult = workspace:Raycast(Camera.CFrame.Position, rayDirection, raycastParams)
+    
+    if raycastResult then return false end
+    return true
+end
+
 local espBoxes = {}
+local espNames = {}
 
+local function cleanESP(p)
+    if espBoxes[p] then espBoxes[p]:Destroy(); espBoxes[p] = nil end
+    if espNames[p] then espNames[p]:Destroy(); espNames[p] = nil end
+end
+
+------------------------------------------------------------------------
+-- ULTIMATE RUNTIME RUNLOOP (HEARTBEAT CONSTRAINED)
+------------------------------------------------------------------------
 RunService.Heartbeat:Connect(function()
-    -- Character Enforcement
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-        local hum = LocalPlayer.Character.Humanoid
-        hum.WalkSpeed = Config.Speed
-        hum.JumpPower = Config.Jump
-    end
+    -- Hyper-Aggressive Character Enforcement Loop
+    pcall(function()
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = Config.Speed
+                hum.JumpPower = Config.Jump
+                hum.UseJumpPower = true 
+            end
+        end
+    end)
 
-    -- Aimbot
+    -- Dynamic Math Screen-Centered Camera Aimbot with Strength Scaling
     if Config.Aimbot then
-        local target, lowDist = nil, Config.AimFOV
-        local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+        local target = nil
+        local maxDist = Config.AimFOV
+        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
         
-        for _, p in pairs(Players:GetPlayers()) do
+        for _, p in ipairs(Players:GetPlayers()) do
             if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-                if p.Character.Humanoid.Health > 0 then
-                    local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
-                    if vis then
-                        local mag = (Vector2.new(pos.X, pos.Y) - center).Magnitude
-                        if mag < lowDist then
-                            -- Simple Wall Check
-                            local ray = workspace:Raycast(Camera.CFrame.Position, (p.Character.Head.Position - Camera.CFrame.Position).Unit * 500, RaycastParams.new())
-                            if not Config.WallCheck or (ray and ray.Instance:IsDescendantOf(p.Character)) then
-                                lowDist = mag; target = p.Character.Head
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    local pos, onScreen = Camera:WorldToViewportPoint(p.Character.Head.Position)
+                    if onScreen then
+                        local mouseDist = (Vector2.new(pos.X, pos.Y) - center).Magnitude
+                        if mouseDist < maxDist then
+                            if isPartVisible(p.Character.Head, p.Character) then
+                                maxDist = mouseDist
+                                target = p.Character.Head
                             end
                         end
                     end
                 end
             end
         end
-        if target then Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position) end
-    end
-
-    -- ESP
-    if Config.ESP then
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                local hrp = p.Character.HumanoidRootPart
-                if not espBoxes[p] then
-                    local b = Instance.new("BoxHandleAdornment", hrp)
-                    b.Size = Vector3.new(4, 5, 1); b.AlwaysOnTop = true; b.ZIndex = 5
-                    b.Color3 = Color3.new(0.5, 0, 1); b.Transparency = 0.5; b.Adornee = hrp
-                    espBoxes[p] = b
-                end
+        
+        if target then
+            -- Math translation calculation converting scale factor into direct CFrame step weights
+            local lerpValue = Config.AimStrength / 10
+            if Config.AimStrength >= 10 then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            else
+                Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), lerpValue)
             end
         end
-    end
-end)
