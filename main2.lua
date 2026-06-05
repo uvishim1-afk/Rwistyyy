@@ -8,7 +8,7 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- !! Replace with your Roblox User ID !!
-local OWNER_ID = 0
+local OWNER_ID = 11040787676
 
 if LocalPlayer.UserId ~= OWNER_ID then return end
 
